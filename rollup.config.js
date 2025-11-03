@@ -1,3 +1,4 @@
+import commonjs from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import copy from 'rollup-plugin-copy';
 
@@ -16,7 +17,10 @@ export default {
     entryFileNames: '[name].js'
   },
   plugins: [
-    nodeResolve(),
+    nodeResolve({
+      mainFields: ['module', 'main', 'browser']
+    }),
+    commonjs(),
     copy({
       targets: [
         { src: 'extension/manifest.json', dest: 'dist' },
