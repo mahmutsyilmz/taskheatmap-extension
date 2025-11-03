@@ -41,5 +41,5 @@ async function createArchive() {
 (async () => {
   await ensureBuildExists();
   const archivePath = await createArchive();
-  console.log(`Packaged Chrome extension → ${archivePath}`);
+  console.info(`Packaged Chrome extension → ${archivePath}`);
 })();

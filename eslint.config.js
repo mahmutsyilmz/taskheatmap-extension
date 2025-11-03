@@ -15,7 +15,15 @@ const baseConfig = {
   },
   rules: {
     ...js.configs.recommended.rules,
-    'no-console': 'off',
+    'no-console': ['error', { allow: ['info', 'warn', 'error', 'debug'] }],
+    'no-unused-vars': [
+      'error',
+      {
+        args: 'after-used',
+        argsIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      },
+    ],
   },
 };
 
@@ -31,7 +39,7 @@ const testConfig = {
 
 export default [
   {
-    ignores: ['dist/**', 'artifacts/**', 'node_modules/**'],
+    ignores: ['dist/**', 'artifacts/**', 'node_modules/**', 'coverage/**'],
   },
   {
     ...js.configs.recommended,
