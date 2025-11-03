@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createInitialState, getStoredState, saveState, STORAGE_KEY, updateInterval } from '../lib/storage.js';
+import { addTrackedSeconds, createInitialState, getStoredState, saveState, STORAGE_KEY, updateInterval } from '../lib/storage.js';
 
 const originalChrome = globalThis.chrome;
 
@@ -14,7 +14,7 @@ afterEach(() => {
 describe('storage', () => {
   it('creates a predictable default state', () => {
     expect(createInitialState()).toMatchObject({
-      activities: [],
+      days: {},
       options: { intervalMinutes: 15 },
     });
   });
@@ -32,7 +32,10 @@ describe('storage', () => {
       },
     };
 
-    await expect(getStoredState(fakeStorage)).resolves.toEqual(stored);
+    await expect(getStoredState(fakeStorage)).resolves.toEqual({
+      days: {},
+      options: { intervalMinutes: 5 },
+    });
   });
 
   it('rejects when chrome reports a read error', async () => {
@@ -86,5 +89,33 @@ describe('storage', () => {
     expect(result).not.toBe(state);
     expect(result.options.intervalMinutes).toBe(30);
     expect(state.options.intervalMinutes).toBe(15);
+  });
+
+  it('rolls tracked seconds into the days collection', () => {
+    const state = createInitialState();
+    const date = new Date('2024-01-02T10:00:00Z');
+
+    const updated = addTrackedSeconds(state, 'github.com', 10, date);
+
+    expect(updated.days).toEqual({ '2024-01-02': { 'github.com': 10 } });
+    expect(state.days).toEqual({});
+  });
+
+  it('accumulates seconds across multiple updates', () => {
+    const state = createInitialState();
+    const date = new Date('2024-05-05T12:00:00Z');
+
+    const first = addTrackedSeconds(state, 'example.com', 15, date);
+    const second = addTrackedSeconds(first, 'example.com', 5, date);
+
+    expect(second.days).toEqual({ '2024-05-05': { 'example.com': 20 } });
+  });
+
+  it('ignores invalid inputs when rolling up seconds', () => {
+    const state = createInitialState();
+
+    expect(addTrackedSeconds(state, null, 10)).toBe(state);
+    expect(addTrackedSeconds(state, 'github.com', 0)).toBe(state);
+    expect(addTrackedSeconds(state, 'github.com', 10, new Date('invalid'))).toBe(state);
   });
 });

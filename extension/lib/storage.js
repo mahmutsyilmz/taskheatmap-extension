@@ -2,9 +2,27 @@ export const STORAGE_KEY = 'taskheatmap:state';
 
 export function createInitialState() {
   return {
-    activities: [],
+    days: {},
     options: {
       intervalMinutes: 15,
+    },
+  };
+}
+
+function normalizeStateSchema(state) {
+  const defaults = createInitialState();
+
+  if (!state || typeof state !== 'object') {
+    return defaults;
+  }
+
+  return {
+    ...defaults,
+    ...state,
+    days: { ...(state.days ?? defaults.days) },
+    options: {
+      ...defaults.options,
+      ...(state.options ?? {}),
     },
   };
 }
@@ -33,7 +51,7 @@ export async function getStoredState(storage = null) {
         return;
       }
 
-      resolve(result?.[STORAGE_KEY] ?? createInitialState());
+      resolve(normalizeStateSchema(result?.[STORAGE_KEY]));
     });
   });
 }
@@ -67,6 +85,41 @@ export function updateInterval(state, minutes) {
     options: {
       ...state.options,
       intervalMinutes: minutes,
+    },
+  };
+}
+
+function toDateKey(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+export function addTrackedSeconds(state, domain, seconds, date = new Date()) {
+  if (!domain || typeof domain !== 'string' || seconds <= 0) {
+    return state;
+  }
+
+  const dateKey = toDateKey(date);
+
+  if (!dateKey) {
+    return state;
+  }
+
+  const currentState = normalizeStateSchema(state);
+  const dayEntries = currentState.days[dateKey] ?? {};
+  const total = (dayEntries[domain] ?? 0) + seconds;
+
+  return {
+    ...currentState,
+    days: {
+      ...currentState.days,
+      [dateKey]: {
+        ...dayEntries,
+        [domain]: total,
+      },
     },
   };
 }
