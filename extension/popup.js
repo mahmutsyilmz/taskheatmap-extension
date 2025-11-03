@@ -1,5 +1,5 @@
 import Chart from 'chart.js/auto';
-import dayjs from 'dayjs/esm/index.js';
+import dayjs from 'dayjs';
 import { getStoredState } from './lib/storage.js';
 
 const chromeApi = globalThis.chrome;
