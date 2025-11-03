@@ -7,10 +7,40 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <main class="popup">
-      <h1>TaskHeatmap</h1>
-      <p>Track and visualize your browsing activity heatmap.</p>
-      <button id="open-options">Open Options</button>
+    <main class="popup" role="main">
+      <header class="popup__header">
+        <div>
+          <h1>TaskHeatmap</h1>
+          <p class="popup__subtitle">Temporary data viewer for tracked time.</p>
+        </div>
+        <button id="open-options" type="button" class="button button--secondary">
+          Open Options
+        </button>
+      </header>
+
+      <section class="viewer" aria-labelledby="viewer-title">
+        <div class="viewer__toolbar">
+          <h2 id="viewer-title">Domain Activity</h2>
+          <button id="clear-data" type="button" class="button button--danger">Clear Data</button>
+        </div>
+
+        <div class="table" role="region" aria-live="polite">
+          <table class="table__inner">
+            <thead>
+              <tr>
+                <th scope="col">Domain</th>
+                <th scope="col" class="table__numeric">Total Time (min)</th>
+              </tr>
+            </thead>
+            <tbody id="domain-rows">
+              <tr data-empty>
+                <td colspan="2">No browsing data stored yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
+      </section>
     </main>
     <script type="module" src="popup.js"></script>
   </body>
