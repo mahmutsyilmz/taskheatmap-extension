@@ -20,21 +20,40 @@
 
       <section class="viewer" aria-labelledby="viewer-title">
         <div class="viewer__toolbar">
-          <h2 id="viewer-title">Domain Activity</h2>
-          <button id="clear-data" type="button" class="button button--danger">Clear Data</button>
+          <div>
+            <h2 id="viewer-title">Domain Activity</h2>
+            <p class="viewer__subtitle">Daily minutes spent per domain</p>
+          </div>
+          <div class="viewer__actions">
+            <label for="day-select" class="viewer__label">
+              <span class="viewer__label-text">Day</span>
+              <select id="day-select" class="viewer__select" aria-label="Select a day"></select>
+            </label>
+            <button id="clear-data" type="button" class="button button--danger">Clear Data</button>
+          </div>
         </div>
+
+        <div class="chart-card" role="img" aria-labelledby="viewer-title" aria-live="polite">
+          <canvas id="activity-chart" width="360" height="200"></canvas>
+          <p id="chart-empty" class="chart-empty" role="status">No activity recorded for the selected day.</p>
+        </div>
+
+        <section class="top-domains" aria-labelledby="top-domains-title">
+          <h3 id="top-domains-title">Top 5 domains</h3>
+          <ol id="top-domain-list" class="top-domains__list" aria-live="polite"></ol>
+        </section>
 
         <div class="table" role="region" aria-live="polite">
           <table class="table__inner">
             <thead>
               <tr>
                 <th scope="col">Domain</th>
-                <th scope="col" class="table__numeric">Total Time (min)</th>
+                <th scope="col" class="table__numeric">Minutes</th>
               </tr>
             </thead>
             <tbody id="domain-rows">
               <tr data-empty>
-                <td colspan="2">No browsing data stored yet.</td>
+                <td colspan="2">No activity tracked for this day.</td>
               </tr>
             </tbody>
           </table>
