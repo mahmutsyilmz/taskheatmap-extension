@@ -22,17 +22,41 @@ const baseConfig = {
         args: 'after-used',
         argsIgnorePattern: '^_',
         ignoreRestSiblings: true,
+        caughtErrors: 'all',
+        caughtErrorsIgnorePattern: '^_',
       },
     ],
   },
 };
 
-const testConfig = {
+const vitestConfig = {
   files: ['extension/tests/**/*.test.js'],
   languageOptions: {
     globals: {
       ...globals.node,
       ...globals.vitest,
+    },
+  },
+};
+
+const uiTestConfig = {
+  files: ['extension/tests/ui/**/*.spec.js', 'extension/tests/ui/setupTests.js'],
+  languageOptions: {
+    globals: {
+      ...globals.node,
+      ...globals.jest,
+      page: true,
+      browser: true,
+      context: true,
+    },
+  },
+};
+
+const nodeScriptsConfig = {
+  files: ['scripts/**/*.js', 'jest*.config.cjs'],
+  languageOptions: {
+    globals: {
+      ...globals.node,
     },
   },
 };
@@ -46,5 +70,7 @@ export default [
     ...baseConfig,
   },
   eslintConfigPrettier,
-  testConfig,
+  vitestConfig,
+  uiTestConfig,
+  nodeScriptsConfig,
 ];
