@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { addTrackedSeconds, createInitialState, getStoredState, saveState, STORAGE_KEY, updateInterval } from '../lib/storage.js';
+import {
+  addTrackedSeconds,
+  createInitialState,
+  getStoredState,
+  saveState,
+  STORAGE_KEY,
+  updateInterval,
+  pruneOldDays,
+} from '../lib/storage.js';
 
 const originalChrome = globalThis.chrome;
 
@@ -117,5 +125,38 @@ describe('storage', () => {
     expect(addTrackedSeconds(state, null, 10)).toBe(state);
     expect(addTrackedSeconds(state, 'github.com', 0)).toBe(state);
     expect(addTrackedSeconds(state, 'github.com', 10, new Date('invalid'))).toBe(state);
+  });
+
+  it('prunes days outside of the retention window', () => {
+    const reference = new Date('2024-06-30T00:00:00Z');
+    const state = {
+      days: {
+        '2024-05-01': { 'old.com': 10 },
+        '2024-06-15': { 'fresh.com': 5 },
+        'invalid-date': { foo: 1 },
+      },
+      options: {},
+    };
+
+    const pruned = pruneOldDays(state, 30, reference);
+
+    expect(pruned.days).toEqual({
+      '2024-06-15': { 'fresh.com': 5 },
+      'invalid-date': { foo: 1 },
+    });
+  });
+
+  it('integrates retention into tracked updates', () => {
+    const date = new Date('2024-07-01T12:00:00Z');
+    const olderDate = new Date('2024-05-15T12:00:00Z');
+    let state = createInitialState();
+
+    state = addTrackedSeconds(state, 'old.com', 10, olderDate, 30);
+    state = addTrackedSeconds(state, 'new.com', 5, date, 30);
+
+    expect(state.days).toEqual({
+      '2024-07-01': { 'new.com': 5 },
+    });
+    expect(state.days['2024-05-15']).toBeUndefined();
   });
 });

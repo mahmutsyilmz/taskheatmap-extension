@@ -1,8 +1,24 @@
+function sanitizeEntries(entries = []) {
+  return entries
+    .filter((entry) => entry && typeof entry.domain === 'string')
+    .map((entry) => ({
+      domain: entry.domain,
+      duration: Number.isFinite(entry.duration) ? entry.duration : 0,
+    }));
+}
+
+export function serializeToJson(entries) {
+  return JSON.stringify(sanitizeEntries(entries), null, 2);
+}
+
 export function serializeToCsv(entries) {
   const headers = ['domain', 'duration'];
-  const rows = entries.map(({ domain, duration }) => [domain, String(duration ?? 0)]);
+  const rows = sanitizeEntries(entries).map(({ domain, duration }) => [
+    domain,
+    String(duration ?? 0),
+  ]);
   return [headers, ...rows]
-    .map((row) => row.map((value) => `"${value.replace(/"/g, '""')}"`).join(','))
+    .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
     .join('\n');
 }
 
@@ -21,3 +37,5 @@ export function downloadCsv(filename, csvContent, downloader = null) {
 
   triggerDownload(filename, csvContent);
 }
+
+export const __test__ = { sanitizeEntries };
