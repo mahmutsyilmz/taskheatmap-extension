@@ -9,8 +9,8 @@ describe('Popup UI accessibility', () => {
     const selectAria = await page.$eval('#day-select', (el) => el.getAttribute('aria-label'));
     expect(selectAria).toBe('Select a day');
 
-    const chartRole = await page.$eval('.chart-card', (el) => el.getAttribute('role'));
-    expect(chartRole).toBe('img');
+    const chartLabel = await page.$eval('.panel--chart', (el) => el.getAttribute('aria-label'));
+    expect(chartLabel).toBe('Activity chart');
   });
 
   it('passes automated axe accessibility checks', async () => {
@@ -25,8 +25,10 @@ describe('Popup UI accessibility', () => {
     expect(focusedId).toBe('open-options');
 
     await page.keyboard.press('Tab');
-    const nextFocusedId = await page.evaluate(() => document.activeElement?.id);
-    expect(['day-select', 'clear-data']).toContain(nextFocusedId);
+    const nextFocused = await page.evaluate(
+      () => document.activeElement?.dataset.timeframe ?? document.activeElement?.id
+    );
+    expect(['day', 'week', 'month', 'day-select']).toContain(nextFocused);
   });
 
   it('achieves a Lighthouse accessibility score of at least 90', async () => {

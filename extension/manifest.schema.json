@@ -24,7 +24,7 @@
       "minItems": 1,
       "items": {
         "type": "string",
-        "enum": ["tabs", "storage", "idle"]
+        "enum": ["tabs", "storage", "idle", "alarms", "notifications"]
       },
       "uniqueItems": true
     },

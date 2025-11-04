@@ -1,20 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TaskHeatmap Options</title>
+    <title>TaskHeatmap Preferences</title>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
-    <main class="options">
-      <h1>TaskHeatmap Preferences</h1>
-      <form id="options-form">
-        <label>
-          Tracking interval (minutes)
-          <input id="interval" name="interval" type="number" min="1" value="15" />
-        </label>
-        <button type="submit">Save</button>
+    <main class="options" aria-labelledby="options-title">
+      <header class="options__header">
+        <h1 id="options-title">TaskHeatmap Preferences</h1>
+        <p>Customize how TaskHeatmap tracks your focus and when it nudges you.</p>
+      </header>
+      <form id="options-form" class="options__form">
+        <section class="field-group">
+          <label for="interval">Tracking interval</label>
+          <div class="field-group__control">
+            <input
+              id="interval"
+              name="interval"
+              type="number"
+              min="1"
+              value="15"
+              aria-describedby="interval-hint"
+            />
+            <span id="interval-hint" class="hint"
+              >How often (in minutes) TaskHeatmap samples your active tab.</span
+            >
+          </div>
+        </section>
+        <section class="field-group">
+          <label class="switch">
+            <input id="daily-summary" name="daily-summary" type="checkbox" />
+            <span class="switch__label">Daily summary notification</span>
+          </label>
+          <div class="field-group__control">
+            <label class="time-label" for="summary-hour">Notify me at</label>
+            <input id="summary-hour" name="summary-hour" type="time" step="3600" value="21:00" />
+            <span class="hint">Choose the local time for your end-of-day recap.</span>
+          </div>
+        </section>
+        <button type="submit" class="button">Save changes</button>
       </form>
       <p class="status" role="status" aria-live="polite"></p>
     </main>

@@ -3,7 +3,7 @@
   "name": "TaskHeatmap",
   "version": "0.1.0",
   "description": "Visualize your browsing activity as a heatmap to spot productivity trends.",
-  "permissions": ["tabs", "storage", "idle"],
+  "permissions": ["tabs", "storage", "idle", "alarms", "notifications"],
   "background": {
     "service_worker": "sw.js",
     "type": "module"

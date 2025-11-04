@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,61 +6,143 @@
     <title>TaskHeatmap</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
-  <body>
-    <main class="popup" role="main">
+  <body class="popup">
+    <main class="popup__shell">
       <header class="popup__header">
         <div>
-          <h1>TaskHeatmap</h1>
-          <p class="popup__subtitle">Temporary data viewer for tracked time.</p>
+          <h1 class="popup__title">TaskHeatmap</h1>
+          <p class="popup__subtitle" id="streak-counter" aria-live="polite"></p>
         </div>
-        <button id="open-options" type="button" class="button button--secondary">
-          Open Options
+        <button
+          id="open-options"
+          class="button button--ghost"
+          type="button"
+          aria-label="Open options"
+        >
+          <span>Settings</span>
         </button>
       </header>
 
-      <section class="viewer" aria-labelledby="viewer-title">
-        <div class="viewer__toolbar">
-          <div>
-            <h2 id="viewer-title">Domain Activity</h2>
-            <p class="viewer__subtitle">Daily minutes spent per domain</p>
-          </div>
-          <div class="viewer__actions">
-            <label for="day-select" class="viewer__label">
-              <span class="viewer__label-text">Day</span>
-              <select id="day-select" class="viewer__select" aria-label="Select a day"></select>
-            </label>
-            <button id="clear-data" type="button" class="button button--danger">Clear Data</button>
+      <section class="panel panel--controls">
+        <div class="segmented" role="tablist" aria-label="Timeframe">
+          <button class="segmented__button is-active" role="tab" data-timeframe="day">Day</button>
+          <button class="segmented__button" role="tab" data-timeframe="week">Week</button>
+          <button class="segmented__button" role="tab" data-timeframe="month">Month</button>
+        </div>
+        <div class="filter-controls">
+          <label class="filter-controls__label" for="activity-filter">Activity</label>
+          <div class="segmented" id="activity-filter" role="tablist" aria-label="Activity filter">
+            <button class="segmented__button" role="tab" data-filter="active">Active</button>
+            <button class="segmented__button is-active" role="tab" data-filter="all">All</button>
+            <button class="segmented__button" role="tab" data-filter="idle">Idle</button>
           </div>
         </div>
+        <label class="day-select">
+          <span class="day-select__label">Anchor date</span>
+          <select id="day-select" aria-label="Select a day"></select>
+        </label>
+      </section>
 
-        <div class="chart-card" role="img" aria-labelledby="viewer-title" aria-live="polite">
-          <canvas id="activity-chart" width="360" height="200"></canvas>
-          <p id="chart-empty" class="chart-empty" role="status">No activity recorded for the selected day.</p>
+      <section class="panel panel--chart" aria-label="Activity chart">
+        <canvas id="activity-chart" width="320" height="220"></canvas>
+        <div id="chart-empty" class="empty-state" hidden>
+          <svg
+            class="empty-state__illustration"
+            viewBox="0 0 120 80"
+            role="presentation"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#7a7fff" stop-opacity="0.85" />
+                <stop offset="100%" stop-color="#50e3c2" stop-opacity="0.85" />
+              </linearGradient>
+            </defs>
+            <rect
+              x="12"
+              y="18"
+              width="96"
+              height="54"
+              rx="10"
+              fill="url(#gradient)"
+              opacity="0.12"
+            />
+            <path
+              d="M28 60L44 42l12 14 18-26 18 24"
+              stroke="#7a7fff"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              fill="none"
+              opacity="0.4"
+            />
+            <circle cx="44" cy="42" r="4" fill="#50e3c2" opacity="0.8" />
+            <circle cx="74" cy="30" r="4" fill="#50e3c2" opacity="0.6" />
+            <circle cx="92" cy="54" r="4" fill="#50e3c2" opacity="0.6" />
+          </svg>
+          <p id="chart-empty-message"></p>
         </div>
+      </section>
 
-        <section class="top-domains" aria-labelledby="top-domains-title">
-          <h3 id="top-domains-title">Top 5 domains</h3>
-          <ol id="top-domain-list" class="top-domains__list" aria-live="polite"></ol>
-        </section>
+      <section class="panel panel--trend" aria-live="polite" id="trend-summary"></section>
 
-        <div class="table" role="region" aria-live="polite">
-          <table class="table__inner">
+      <section class="panel panel--top" aria-labelledby="top-domains-title">
+        <div class="panel__header">
+          <h2 id="top-domains-title">Focus highlights</h2>
+          <span class="panel__subtext" id="total-duration"></span>
+        </div>
+        <ol id="top-domain-list" class="top-domains" data-empty="true"></ol>
+      </section>
+
+      <section class="panel panel--table">
+        <div class="panel__header">
+          <h2>Breakdown</h2>
+          <div class="export-buttons">
+            <button id="export-json" class="button button--ghost" type="button">Export JSON</button>
+            <button id="export-csv" class="button" type="button">Export CSV</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
             <thead>
               <tr>
                 <th scope="col">Domain</th>
-                <th scope="col" class="table__numeric">Minutes</th>
+                <th scope="col" class="table__numeric">Active</th>
+                <th scope="col" class="table__numeric">Idle</th>
+                <th scope="col" class="table__numeric">Total</th>
               </tr>
             </thead>
-            <tbody id="domain-rows">
-              <tr data-empty>
-                <td colspan="2">No activity tracked for this day.</td>
-              </tr>
-            </tbody>
+            <tbody id="domain-rows"></tbody>
           </table>
         </div>
-        <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="panel panel--actions">
+        <button id="clear-data" class="button button--danger" type="button">Clear data</button>
+        <p id="status-message" class="status" role="status" aria-live="polite"></p>
       </section>
     </main>
+
+    <div
+      id="confirm-modal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      hidden
+    >
+      <div class="modal__content">
+        <h2 id="confirm-title">Remove all tracked data?</h2>
+        <p>This action cannot be undone and will reset your heatmap.</p>
+        <div class="modal__actions">
+          <button id="confirm-cancel" class="button button--ghost" type="button">Cancel</button>
+          <button id="confirm-accept" class="button button--danger" type="button">
+            Yes, clear everything
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="popup.js"></script>
   </body>
 </html>

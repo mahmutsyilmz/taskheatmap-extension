@@ -24,8 +24,22 @@ describe('Options UI accessibility', () => {
     expect(firstFocus).toBe('interval');
 
     await page.keyboard.press('Tab');
-    const secondFocus = await page.evaluate(() => document.activeElement?.tagName);
-    expect(secondFocus).toBe('BUTTON');
+    const secondFocus = await page.evaluate(() => document.activeElement?.id);
+    expect(secondFocus).toBe('daily-summary');
+
+    await page.keyboard.press('Tab');
+    const thirdFocus = await page.evaluate(() => document.activeElement?.id);
+    expect(['summary-hour', 'summary-hour-hours']).toContain(thirdFocus);
+
+    let attempts = 0;
+    let focusedTag = '';
+    while (attempts < 5 && focusedTag !== 'BUTTON') {
+      await page.keyboard.press('Tab');
+      focusedTag = await page.evaluate(() => document.activeElement?.tagName ?? '');
+      attempts += 1;
+    }
+
+    expect(focusedTag).toBe('BUTTON');
   });
 
   it('meets Lighthouse accessibility expectations', async () => {

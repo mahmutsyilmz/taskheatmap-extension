@@ -11,6 +11,7 @@
     "test:coverage": "vitest run --coverage",
     "validate:manifest": "node scripts/validateManifest.js",
     "test:ui": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.ui.config.cjs",
+    "test:e2e": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.e2e.config.cjs",
     "build": "rollup -c",
     "package": "node scripts/package.js",
     "prepare": "husky install"
