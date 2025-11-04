@@ -3,6 +3,10 @@ import dayjs from 'dayjs';
 import { getStoredState } from './lib/storage.js';
 
 const chromeApi = globalThis.chrome;
+const MESSAGE_TYPES = {
+  GET_STATE: 'taskheatmap:get-state',
+  STATE_UPDATED: 'taskheatmap:state-updated',
+};
 const optionsButton = document.getElementById('open-options');
 const clearButton = document.getElementById('clear-data');
 const tableBody = document.getElementById('domain-rows');
@@ -15,45 +19,148 @@ const topDomainsList = document.getElementById('top-domain-list');
 let chartInstance = null;
 let cachedDays = {};
 
-if (optionsButton && chromeApi?.runtime?.openOptionsPage) {
+let loadPromise = null;
+
+async function openOptionsPage() {
+  if (!chromeApi?.runtime) {
+    setStatus('Options page is not available in this environment.');
+    return;
+  }
+
+  if (typeof chromeApi.runtime.openOptionsPage === 'function') {
+    try {
+      await new Promise((resolve, reject) => {
+        chromeApi.runtime.openOptionsPage(() => {
+          const error = chromeApi.runtime?.lastError;
+
+          if (error) {
+            reject(new Error(error.message));
+            return;
+          }
+
+          resolve();
+        });
+      });
+
+      return;
+    } catch (error) {
+      console.warn('Failed to open options page via chrome.runtime.openOptionsPage', error);
+    }
+  }
+
+  const optionsUrl = chromeApi.runtime.getURL?.('options.html');
+
+  if (optionsUrl && typeof chromeApi.tabs?.create === 'function') {
+    try {
+      await new Promise((resolve, reject) => {
+        chromeApi.tabs.create({ url: optionsUrl }, () => {
+          const error = chromeApi.runtime?.lastError;
+
+          if (error) {
+            reject(new Error(error.message));
+            return;
+          }
+
+          resolve();
+        });
+      });
+
+      return;
+    } catch (error) {
+      console.warn('Failed to open options page via chrome.tabs.create', error);
+    }
+  }
+
+  setStatus('Unable to open options page automatically. Please use chrome://extensions.');
+}
+
+if (optionsButton) {
   optionsButton.addEventListener('click', () => {
-    chromeApi.runtime.openOptionsPage();
+    void openOptionsPage();
   });
 }
 
-async function loadStoredDomains() {
-  try {
-    setStatus('');
-    const state = await getStoredState();
-    cachedDays = state.days ?? {};
-    const dayKeys = getSortedDayKeys(cachedDays);
+async function requestStateFromBackground(flushPending = false) {
+  if (!chromeApi?.runtime?.sendMessage) {
+    return null;
+  }
 
-    renderDayOptions(dayKeys);
+  return new Promise((resolve) => {
+    try {
+      chromeApi.runtime.sendMessage({ type: MESSAGE_TYPES.GET_STATE, flushPending }, (response) => {
+        const error = chromeApi.runtime?.lastError;
 
-    if (dayKeys.length === 0) {
+        if (error) {
+          console.warn('Failed to fetch state from background', error.message);
+          resolve(null);
+          return;
+        }
+
+        if (response && typeof response === 'object') {
+          if (response.ok) {
+            resolve(response.state ?? null);
+            return;
+          }
+
+          if (response.error) {
+            console.warn('Background rejected state request', response.error);
+          }
+        }
+
+        resolve(null);
+      });
+    } catch (error) {
+      console.warn('Failed to request state from background', error);
+      resolve(null);
+    }
+  });
+}
+
+async function loadStoredDomains({ flushPending = false } = {}) {
+  if (loadPromise) {
+    return loadPromise;
+  }
+
+  loadPromise = (async () => {
+    try {
+      setStatus('');
+      const backgroundState = await requestStateFromBackground(flushPending);
+      const state = backgroundState ?? (await getStoredState());
+      cachedDays = state?.days ?? {};
+      const dayKeys = getSortedDayKeys(cachedDays);
+
+      renderDayOptions(dayKeys);
+
+      if (dayKeys.length === 0) {
+        renderTable([]);
+        renderChart('', []);
+        renderTopDomains([]);
+        setStatus('No activity recorded yet. Start browsing to see data here.');
+        return;
+      }
+
+      const defaultDay = dayKeys.at(-1);
+      const selected =
+        daySelect?.value && dayKeys.includes(daySelect.value) ? daySelect.value : defaultDay;
+
+      if (daySelect) {
+        daySelect.value = selected;
+      }
+
+      updateSelectedDay(selected);
+    } catch (error) {
+      console.error('Failed to load stored domains', error);
+      cachedDays = {};
       renderTable([]);
       renderChart('', []);
       renderTopDomains([]);
-      setStatus('No activity recorded yet. Start browsing to see data here.');
-      return;
+      setStatus('Unable to load stored data. Please try again later.');
+    } finally {
+      loadPromise = null;
     }
+  })();
 
-    const defaultDay = dayKeys.at(-1);
-    const selected = daySelect?.value && dayKeys.includes(daySelect.value) ? daySelect.value : defaultDay;
-
-    if (daySelect) {
-      daySelect.value = selected;
-    }
-
-    updateSelectedDay(selected);
-  } catch (error) {
-    console.error('Failed to load stored domains', error);
-    cachedDays = {};
-    renderTable([]);
-    renderChart('', []);
-    renderTopDomains([]);
-    setStatus('Unable to load stored data. Please try again later.');
-  }
+  return loadPromise;
 }
 
 function updateSelectedDay(dateKey) {
@@ -376,4 +483,12 @@ if (daySelect) {
   });
 }
 
-loadStoredDomains();
+if (chromeApi?.runtime?.onMessage?.addListener) {
+  chromeApi.runtime.onMessage.addListener((message) => {
+    if (message?.type === MESSAGE_TYPES.STATE_UPDATED) {
+      void loadStoredDomains();
+    }
+  });
+}
+
+void loadStoredDomains({ flushPending: true });

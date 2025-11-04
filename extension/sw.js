@@ -6,6 +6,11 @@ const TICK_INTERVAL = 10 * 1000;
 const MIN_VISIT_SECONDS = 5;
 const IDLE_DETECTION_INTERVAL_SECONDS = 60;
 
+const MESSAGE_TYPES = {
+  GET_STATE: 'taskheatmap:get-state',
+  STATE_UPDATED: 'taskheatmap:state-updated',
+};
+
 let tickTimer = null;
 let lastTickTimestamp = Date.now();
 let lastActiveDomain = null;
@@ -95,6 +100,7 @@ async function recordDomainTime(domain, seconds) {
   try {
     await saveState(state);
     console.log(`tracked ${domain} +${seconds}s`);
+    notifyStateUpdated();
   } catch (error) {
     console.error(`[TaskHeatmap] Failed to persist tracked time for ${domain}`, error);
   }
@@ -204,6 +210,47 @@ function stopTickLoop() {
   tickTimer = null;
   console.info('[TaskHeatmap] Background tick loop stopped.');
 }
+
+function notifyStateUpdated() {
+  try {
+    const result = chrome.runtime?.sendMessage?.({ type: MESSAGE_TYPES.STATE_UPDATED });
+
+    if (result && typeof result.catch === 'function') {
+      result.catch(() => {});
+    }
+  } catch (error) {
+    console.warn('[TaskHeatmap] Failed to notify state update', error);
+  }
+}
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (!message || typeof message !== 'object') {
+    return undefined;
+  }
+
+  if (message.type === MESSAGE_TYPES.GET_STATE) {
+    const { flushPending = false } = message;
+
+    enqueueWork(async () => {
+      try {
+        if (flushPending) {
+          await runTick();
+        } else {
+          await ensureStateLoaded();
+        }
+
+        sendResponse({ ok: true, state });
+      } catch (error) {
+        console.error('[TaskHeatmap] Failed to resolve state for popup', error);
+        sendResponse({ ok: false, error: error.message });
+      }
+    });
+
+    return true;
+  }
+
+  return undefined;
+});
 
 chrome.runtime.onInstalled.addListener(() => {
   console.info('[TaskHeatmap] Extension installed.');
