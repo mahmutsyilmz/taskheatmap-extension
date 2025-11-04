@@ -15,3 +15,5 @@
 
 ### Fixed
 - Service worker now restores activity state after sleep and handles window focus changes reliably.
+- Popup trend summary now escapes domain names when rendering and avoids using `innerHTML`.
+- CI installs the correct audio library package to fix missing system dependencies for UI tests.

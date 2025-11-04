@@ -191,23 +191,35 @@ export function updateTrendSummary(target, trend) {
     return;
   }
 
+  target.textContent = '';
+
   if (!trend || !trend.topDomain) {
     target.textContent = 'No trend data yet — keep working and check back soon!';
     return;
   }
 
   const direction = trend.topDomain.trend?.direction ?? 'flat';
-  const deltaMinutes = toMinutes(trend.topDomain.trend?.delta ?? 0);
-  const percent = trend.topDomain.trend?.percent ?? 0;
+  const domainLabel = resolveFriendlyDomain(trend.topDomain.domain);
 
   if (direction === 'flat') {
-    target.textContent = `Consistent focus on ${resolveFriendlyDomain(trend.topDomain.domain)}.`;
+    target.textContent = `Consistent focus on ${domainLabel}.`;
     return;
   }
 
   const arrow = direction === 'up' ? '▲' : '▼';
   const adjective = direction === 'up' ? 'more' : 'less';
-  target.innerHTML = `<strong>${resolveFriendlyDomain(trend.topDomain.domain)}</strong>: ${arrow} ${Math.abs(percent).toFixed(1)}% ${adjective} than last period (${Math.abs(deltaMinutes).toFixed(1)}m).`;
+  const percent = Math.abs(trend.topDomain.trend?.percent ?? 0).toFixed(1);
+  const deltaMinutes = Math.abs(toMinutes(trend.topDomain.trend?.delta ?? 0)).toFixed(1);
+
+  const emphasis = document.createElement('strong');
+  emphasis.textContent = domainLabel;
+
+  target.append(
+    emphasis,
+    document.createTextNode(
+      `: ${arrow} ${percent}% ${adjective} than last period (${deltaMinutes}m).`
+    )
+  );
 }
 
 export function updateTotalDuration(target, totals, label) {
