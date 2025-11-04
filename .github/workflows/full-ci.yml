@@ -13,6 +13,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libatk1.0-0 libatk-bridge2.0-0 libgtk-3-0 libnss3 libxss1 libasound2
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -30,6 +33,12 @@ jobs:
       - name: Unit tests with coverage
         run: npm run test:coverage
 
+      - name: UI accessibility tests
+        run: npm run test:ui
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
       - name: Build extension
         run: npm run build
 
@@ -38,9 +47,6 @@ jobs:
 
       - name: Validate manifest and build
         run: npm run validate:manifest
-
-      - name: UI accessibility tests
-        run: npm run test:ui
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4

@@ -3,7 +3,12 @@ function sanitizeEntries(entries = []) {
     .filter((entry) => entry && typeof entry.domain === 'string')
     .map((entry) => ({
       domain: entry.domain,
-      duration: Number.isFinite(entry.duration) ? entry.duration : 0,
+      activeSeconds: Number.isFinite(entry.activeSeconds) ? entry.activeSeconds : 0,
+      idleSeconds: Number.isFinite(entry.idleSeconds) ? entry.idleSeconds : 0,
+      totalSeconds: Number.isFinite(entry.totalSeconds)
+        ? entry.totalSeconds
+        : (Number.isFinite(entry.activeSeconds) ? entry.activeSeconds : 0) +
+          (Number.isFinite(entry.idleSeconds) ? entry.idleSeconds : 0),
     }));
 }
 
@@ -12,11 +17,15 @@ export function serializeToJson(entries) {
 }
 
 export function serializeToCsv(entries) {
-  const headers = ['domain', 'duration'];
-  const rows = sanitizeEntries(entries).map(({ domain, duration }) => [
-    domain,
-    String(duration ?? 0),
-  ]);
+  const headers = ['domain', 'activeSeconds', 'idleSeconds', 'totalSeconds'];
+  const rows = sanitizeEntries(entries).map(
+    ({ domain, activeSeconds, idleSeconds, totalSeconds }) => [
+      domain,
+      String(activeSeconds ?? 0),
+      String(idleSeconds ?? 0),
+      String(totalSeconds ?? 0),
+    ]
+  );
   return [headers, ...rows]
     .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
     .join('\n');

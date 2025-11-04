@@ -7,13 +7,13 @@
 
 ## Phase 1 — Tracking Core (Weeks 2-3)
 - Implement background service worker with tick loop, idle detection, and domain normalization.
-- Persist data locally using the defined schema with retention, batching, and migration helpers.
+- Persist data locally using the defined schema with retention, batching, migration helpers, and activity (active vs idle) splits stored per day.
 - Add domain→category defaults, exclusions list, and pause/resume controls.
 - Create JSON/CSV export utilities and ensure schema parity with PRD.
 
 ## Phase 2 — User Interfaces (Weeks 4-5)
-- Build popup UI with total time header, category donut chart, and top-sites list.
-- Implement options page for category mapping, exclusions, and preference toggles.
+- Build popup UI with total time header, multi-period (day/week/month) analytics, trend insights, streak indicator, and top-sites list with active/idle filters.
+- Implement options page for category mapping, exclusions, preference toggles, and configurable daily summary notifications.
 - Wire UI interactions to storage layer, including pause state messaging and export actions.
 - Add localization files (TR/EN) and ensure accessibility (keyboard, contrast, ARIA).
 
@@ -24,7 +24,7 @@
 
 ## Phase 4 — Stabilization & QA (Week 7)
 - Run performance profiling to validate CPU (<3%) and memory (<50 MB) targets.
-- Execute end-to-end manual test matrix across supported OS/Chrome versions.
+- Execute automated UI accessibility audits and headless end-to-end tests that simulate tracked browsing sessions before manual regression.
 - Address bugs, polish UX copy, and finalize iconography/assets.
 
 ## Phase 5 — Release Preparation (Week 8)

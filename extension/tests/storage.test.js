@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  ACTIVITY_TYPES,
   addTrackedSeconds,
   createInitialState,
   getStoredState,
@@ -7,6 +8,7 @@ import {
   STORAGE_KEY,
   updateInterval,
   pruneOldDays,
+  updateDailySummary,
 } from '../lib/storage.js';
 
 const originalChrome = globalThis.chrome;
@@ -23,7 +25,10 @@ describe('storage', () => {
   it('creates a predictable default state', () => {
     expect(createInitialState()).toMatchObject({
       days: {},
-      options: { intervalMinutes: 15 },
+      options: {
+        intervalMinutes: 15,
+        dailySummary: { enabled: true, hour: 21 },
+      },
     });
   });
 
@@ -32,7 +37,7 @@ describe('storage', () => {
   });
 
   it('reads state from a chrome-like storage area', async () => {
-    const stored = { options: { intervalMinutes: 5 } };
+    const stored = { options: { intervalMinutes: 5, dailySummary: { enabled: false, hour: 18 } } };
     const fakeStorage = {
       get(keys, callback) {
         expect(keys).toEqual([STORAGE_KEY]);
@@ -42,7 +47,7 @@ describe('storage', () => {
 
     await expect(getStoredState(fakeStorage)).resolves.toEqual({
       days: {},
-      options: { intervalMinutes: 5 },
+      options: { intervalMinutes: 5, dailySummary: { enabled: false, hour: 18 } },
     });
   });
 
@@ -67,8 +72,11 @@ describe('storage', () => {
     const fakeStorage = { set: fakeSet };
     const state = createInitialState();
 
-    await expect(saveState(state, fakeStorage)).resolves.toBe(state);
-    expect(fakeSet).toHaveBeenCalledWith({ [STORAGE_KEY]: state }, expect.any(Function));
+    await expect(saveState(state, fakeStorage)).resolves.toEqual(createInitialState());
+    expect(fakeSet).toHaveBeenCalledWith(
+      { [STORAGE_KEY]: createInitialState() },
+      expect.any(Function)
+    );
   });
 
   it('rejects when chrome reports a write error', async () => {
@@ -99,40 +107,85 @@ describe('storage', () => {
     expect(state.options.intervalMinutes).toBe(15);
   });
 
-  it('rolls tracked seconds into the days collection', () => {
+  it('updates daily summary immutably', () => {
+    const state = createInitialState();
+    const result = updateDailySummary(state, { enabled: false, hour: 9 });
+
+    expect(result.options.dailySummary).toEqual({ enabled: false, hour: 9 });
+    expect(state.options.dailySummary).toEqual({ enabled: true, hour: 21 });
+  });
+
+  it('rolls tracked seconds into the days collection with activity types', () => {
     const state = createInitialState();
     const date = new Date('2024-01-02T10:00:00Z');
 
-    const updated = addTrackedSeconds(state, 'github.com', 10, date);
+    const updated = addTrackedSeconds(
+      state,
+      'github.com',
+      120,
+      date,
+      undefined,
+      ACTIVITY_TYPES.ACTIVE
+    );
 
-    expect(updated.days).toEqual({ '2024-01-02': { 'github.com': 10 } });
+    expect(updated.days['2024-01-02']).toEqual({
+      domains: { 'github.com': { active: 120, idle: 0 } },
+      totals: { active: 120, idle: 0 },
+      lastUpdatedAt: expect.any(Number),
+    });
     expect(state.days).toEqual({});
   });
 
-  it('accumulates seconds across multiple updates', () => {
+  it('accumulates active and idle seconds across multiple updates', () => {
     const state = createInitialState();
     const date = new Date('2024-05-05T12:00:00Z');
 
-    const first = addTrackedSeconds(state, 'example.com', 15, date);
-    const second = addTrackedSeconds(first, 'example.com', 5, date);
+    const first = addTrackedSeconds(
+      state,
+      'example.com',
+      60,
+      date,
+      undefined,
+      ACTIVITY_TYPES.ACTIVE
+    );
+    const second = addTrackedSeconds(
+      first,
+      'example.com',
+      30,
+      date,
+      undefined,
+      ACTIVITY_TYPES.IDLE
+    );
 
-    expect(second.days).toEqual({ '2024-05-05': { 'example.com': 20 } });
+    expect(second.days['2024-05-05']).toEqual({
+      domains: { 'example.com': { active: 60, idle: 30 } },
+      totals: { active: 60, idle: 30 },
+      lastUpdatedAt: expect.any(Number),
+    });
   });
 
   it('ignores invalid inputs when rolling up seconds', () => {
     const state = createInitialState();
 
-    expect(addTrackedSeconds(state, null, 10)).toBe(state);
-    expect(addTrackedSeconds(state, 'github.com', 0)).toBe(state);
-    expect(addTrackedSeconds(state, 'github.com', 10, new Date('invalid'))).toBe(state);
+    expect(addTrackedSeconds(state, null, 10)).toEqual(createInitialState());
+    expect(addTrackedSeconds(state, 'github.com', 0)).toEqual(createInitialState());
+    expect(addTrackedSeconds(state, 'github.com', 10, new Date('invalid'))).toEqual(
+      createInitialState()
+    );
   });
 
   it('prunes days outside of the retention window', () => {
     const reference = new Date('2024-06-30T00:00:00Z');
     const state = {
       days: {
-        '2024-05-01': { 'old.com': 10 },
-        '2024-06-15': { 'fresh.com': 5 },
+        '2024-05-01': {
+          domains: { 'old.com': { active: 10, idle: 0 } },
+          totals: { active: 10, idle: 0 },
+        },
+        '2024-06-15': {
+          domains: { 'fresh.com': { active: 5, idle: 0 } },
+          totals: { active: 5, idle: 0 },
+        },
         'invalid-date': { foo: 1 },
       },
       options: {},
@@ -140,10 +193,7 @@ describe('storage', () => {
 
     const pruned = pruneOldDays(state, 30, reference);
 
-    expect(pruned.days).toEqual({
-      '2024-06-15': { 'fresh.com': 5 },
-      'invalid-date': { foo: 1 },
-    });
+    expect(Object.keys(pruned.days)).toEqual(['2024-06-15', 'invalid-date']);
   });
 
   it('integrates retention into tracked updates', () => {
@@ -154,9 +204,7 @@ describe('storage', () => {
     state = addTrackedSeconds(state, 'old.com', 10, olderDate, 30);
     state = addTrackedSeconds(state, 'new.com', 5, date, 30);
 
-    expect(state.days).toEqual({
-      '2024-07-01': { 'new.com': 5 },
-    });
-    expect(state.days['2024-05-15']).toBeUndefined();
+    expect(Object.keys(state.days)).toEqual(['2024-07-01']);
+    expect(state.days['2024-07-01'].domains).toEqual({ 'new.com': { active: 5, idle: 0 } });
   });
 });

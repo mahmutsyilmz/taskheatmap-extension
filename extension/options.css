@@ -1,50 +1,173 @@
 :root {
-  color-scheme: light dark;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }
 
 body {
   margin: 0;
-  padding: 2rem;
-  background-color: #f5f5ff;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(122, 127, 255, 0.18), transparent), #0f1126;
+  color: #e2e6ff;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
 }
 
 .options {
-  max-width: 480px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  width: min(560px, 100%);
+  display: grid;
+  gap: 24px;
+  background: rgba(26, 29, 56, 0.92);
+  border-radius: 24px;
+  border: 1px solid rgba(122, 127, 255, 0.2);
+  padding: 32px;
+  box-shadow: 0 24px 40px rgba(6, 8, 20, 0.45);
 }
 
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.options__header h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+}
+
+.options__header p {
+  margin: 0;
+  color: rgba(223, 226, 255, 0.7);
+}
+
+.options__form {
+  display: grid;
+  gap: 24px;
+}
+
+.field-group {
+  display: grid;
+  gap: 12px;
+}
+
+.field-group label {
   font-weight: 600;
+  font-size: 0.95rem;
 }
 
-input,
-button {
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid #d0d0e6;
+.field-group__control {
+  display: grid;
+  gap: 8px;
+}
+
+input[type='number'],
+input[type='time'] {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(122, 127, 255, 0.25);
+  background: rgba(18, 20, 42, 0.9);
+  color: inherit;
   font: inherit;
 }
 
-button {
-  border: none;
-  background-color: #5b4bff;
-  color: #ffffff;
-  font-weight: 600;
-  cursor: pointer;
-  align-self: flex-start;
+input[type='number']:focus-visible,
+input[type='time']:focus-visible {
+  outline: 2px solid rgba(122, 127, 255, 0.7);
+  outline-offset: 2px;
 }
 
-button:hover {
-  background-color: #4435d9;
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.switch input {
+  appearance: none;
+  width: 46px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(122, 127, 255, 0.35);
+  background: rgba(20, 22, 44, 0.9);
+  position: relative;
+  transition: background 180ms ease;
+}
+
+.switch input::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(223, 226, 255, 0.9);
+  transition:
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.switch input:checked {
+  background: linear-gradient(135deg, rgba(122, 127, 255, 0.85), rgba(80, 227, 194, 0.85));
+}
+
+.switch input:checked::after {
+  transform: translateX(20px);
+  background: #0f1126;
+}
+
+.switch__label {
+  font-weight: 600;
+}
+
+.time-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: rgba(223, 226, 255, 0.65);
+}
+
+.button {
+  justify-self: start;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: none;
+  font: inherit;
+  color: #0f1126;
+  background: linear-gradient(135deg, rgba(122, 127, 255, 0.9), rgba(80, 227, 194, 0.9));
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(12, 14, 38, 0.35);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.button:hover,
+.button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 30px rgba(12, 14, 38, 0.4);
+}
+
+.button:focus-visible {
+  outline: 2px solid rgba(122, 127, 255, 0.7);
+  outline-offset: 2px;
 }
 
 .status {
-  min-height: 1.5rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(223, 226, 255, 0.7);
+  min-height: 1.2rem;
+}
+
+@media (max-width: 520px) {
+  .options {
+    padding: 24px;
+  }
 }

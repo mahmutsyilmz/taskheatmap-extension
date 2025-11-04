@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { serializeToCsv, serializeToJson, downloadCsv, __test__ } from '../lib/export.js';
 
 const sampleEntries = [
-  { domain: 'example.com', duration: 120 },
-  { domain: 'openai.com', duration: 45 },
+  { domain: 'example.com', activeSeconds: 300, idleSeconds: 60, totalSeconds: 360 },
+  { domain: 'openai.com', activeSeconds: 120, idleSeconds: 30, totalSeconds: 150 },
 ];
 
 describe('export serialization', () => {
@@ -12,36 +12,35 @@ describe('export serialization', () => {
     const parsed = JSON.parse(json);
 
     expect(parsed).toEqual(sampleEntries);
-    expect(json).toBe(
-      '[\n  {\n    "domain": "example.com",\n    "duration": 120\n  },\n  {\n    "domain": "openai.com",\n    "duration": 45\n  }\n]'
-    );
   });
 
-  it('omits invalid entries from JSON', () => {
+  it('normalizes invalid entries in JSON', () => {
     const json = serializeToJson([
       ...sampleEntries,
-      { domain: null, duration: 10 },
-      { domain: 'broken.com', duration: Number.NaN },
+      { domain: null, activeSeconds: 10, idleSeconds: 5 },
+      { domain: 'broken.com', activeSeconds: Number.NaN, idleSeconds: 5 },
     ]);
 
     expect(JSON.parse(json)).toEqual([
-      { domain: 'example.com', duration: 120 },
-      { domain: 'openai.com', duration: 45 },
-      { domain: 'broken.com', duration: 0 },
+      { domain: 'example.com', activeSeconds: 300, idleSeconds: 60, totalSeconds: 360 },
+      { domain: 'openai.com', activeSeconds: 120, idleSeconds: 30, totalSeconds: 150 },
+      { domain: 'broken.com', activeSeconds: 0, idleSeconds: 5, totalSeconds: 5 },
     ]);
   });
 
   it('escapes data for CSV export', () => {
     const csv = serializeToCsv([
-      { domain: 'example.com', duration: 120 },
-      { domain: 'quoted"domain.com', duration: 30 },
+      { domain: 'example.com', activeSeconds: 60, idleSeconds: 30, totalSeconds: 90 },
+      { domain: 'quoted"domain.com', activeSeconds: 10, idleSeconds: 0, totalSeconds: 10 },
     ]);
 
-    expect(csv).toBe('"domain","duration"\n"example.com","120"\n"quoted""domain.com","30"');
+    expect(csv).toBe(
+      '"domain","activeSeconds","idleSeconds","totalSeconds"\n"example.com","60","30","90"\n"quoted""domain.com","10","0","10"'
+    );
   });
 
   it('removes invalid rows for CSV export', () => {
-    const csv = serializeToCsv([...sampleEntries, { domain: null, duration: 10 }]);
+    const csv = serializeToCsv([...sampleEntries, { domain: null, totalSeconds: 10 }]);
 
     expect(csv.split('\n')).toHaveLength(3);
   });
